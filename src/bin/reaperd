@@ -1,0 +1,57 @@
+#!/usr/bin/python
+
+import ConfigParser
+import os
+import sys
+import yaml
+
+from apscheduler.schedulers.blocking import BlockingScheduler
+from reaper import cgroups
+from reaper import collectors
+
+
+config = ConfigParser.RawConfigParser()
+config.read('/etc/reaper.cfg')
+
+collect_plugin = config.get('daemon', 'plugin')
+bufferf = config.get('daemon', 'buffer')
+verbose = config.getboolean('daemon', 'verbose')
+memory = config.getint('limits', 'max_user_memory')
+cores = config.get('limits', 'reserved_cores')
+check_interval = config.getint('interval', 'check')
+apply_interval = config.getint('interval', 'apply')
+
+def update_cgroups():
+    """ Update cgroup configuration and apply them.
+    """
+    users = yaml.load(open(bufferf, 'r').read())
+    cgroups.update_rules(users, cores, memory)
+    if verbose:
+        print('Control groups updated')
+
+def verify_users():
+    """ Periodically verify active system users.
+    """
+    try:
+        collector = getattr(collectors, collect_plugin)
+        users = collector()
+    except AttributeError:
+        print('Collector not found, exiting.')
+        sys.exit(1)
+
+    current_users = yaml.load(open(bufferf, 'r').read())
+    if current_users != users:
+        open(bufferf, 'w').write(yaml.dump(users))
+        if verbose:
+            print('User list updated')
+        update_cgroups()
+        if verbose:
+            print('Linux control groups updated')
+
+if __name__ == '__main__':
+    scheduler = BlockingScheduler()
+    scheduler.add_executor('processpool')
+    scheduler.add_job(verify_users, 'interval', seconds=check_interval)
+    if verbose:
+        print('Starting scheduler')
+    scheduler.start()
