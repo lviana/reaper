@@ -1,5 +1,6 @@
 
 import os
+import time
 import subprocess
 
 
@@ -43,7 +44,7 @@ def _update_cpuset(cores):
         f.write('}\n\n')
     f.close()
 
-def update_rules(users, cores, memory):
+def update_rules(users, cores, memory, ememory):
     """ Create ruleset for cgred
     """
     corenumber = len(cores)

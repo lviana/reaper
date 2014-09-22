@@ -1,57 +1,59 @@
-#!/usr/bin/python
+#!/usr/bin/python -u
 
 import ConfigParser
 import os
+import sched
 import sys
+import time
 import yaml
 
-from apscheduler.schedulers.blocking import BlockingScheduler
 from reaper import cgroups
 from reaper import collectors
 
 
-config = ConfigParser.RawConfigParser()
-config.read('/etc/reaper.cfg')
+def get_configuration():
+    config = ConfigParser.RawConfigParser()
+    config.read('/etc/reaper.cfg')
 
-collect_plugin = config.get('daemon', 'plugin')
-bufferf = config.get('daemon', 'buffer')
-verbose = config.getboolean('daemon', 'verbose')
-memory = config.getint('limits', 'max_user_memory')
-cores = config.get('limits', 'reserved_cores')
-check_interval = config.getint('interval', 'check')
-apply_interval = config.getint('interval', 'apply')
+    plugin = config.get('daemon', 'plugin')
+    check = config.getint('daemon', 'interval')
+    bufferf = config.get('daemon', 'buffer')
+    debug = config.get('daemon', 'debug')
+    memory = config.get('limits', 'memory')
+    cores = config.get('limits', 'cores')
+    ememory = config.get('overlimit', 'memory')
 
-def update_cgroups():
-    """ Update cgroup configuration and apply them.
+def gupdate():
+    """ Update control groups on server
     """
     users = yaml.load(open(bufferf, 'r').read())
-    cgroups.update_rules(users, cores, memory)
-    if verbose:
-        print('Control groups updated')
+    cgroups.update_rules(users, cores, memory, ememory)
+    if debug: print('Control groups updated')
 
-def verify_users():
-    """ Periodically verify active system users.
+def verify(sc):
+    """ Periodically verify system changes
     """
     try:
-        collector = getattr(collectors, collect_plugin)
-        users = collector()
+        collect = getattr(collectors, plugin)
+        users = collect()
+        last_state = yaml.load(open(bufferf, 'r').read())
     except AttributeError:
         print('Collector not found, exiting.')
         sys.exit(1)
+    except IOError:
+        open(bufferf, 'w').write('')
+        last_state = yaml.load(open(bufferf, 'r').read())
 
-    current_users = yaml.load(open(bufferf, 'r').read())
-    if current_users != users:
+    if last_state != users:
         open(bufferf, 'w').write(yaml.dump(users))
-        if verbose:
-            print('User list updated')
-        update_cgroups()
-        if verbose:
-            print('Linux control groups updated')
+        if debug: print('Buffer file updated')
+        gupdate()
+        if debug: print('Linux control groups updated')
+
+    sc.enter(check, 1, verify, (sc,))
 
 if __name__ == '__main__':
-    scheduler = BlockingScheduler()
-    scheduler.add_executor('processpool')
-    scheduler.add_job(verify_users, 'interval', seconds=check_interval)
-    if verbose:
-        print('Starting scheduler')
-    scheduler.start()
+    s = sched.scheduler(time.time, time.sleep)
+    s.enter(check, 1, verify, (s,))
+    if debug: print('Starting reaper scheduled checks')
+    s.run()

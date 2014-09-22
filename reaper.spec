@@ -43,7 +43,8 @@ It is easy to be extended or adapted to run on other platforms.
 %{python_sitelib}/reaper/cgroups.py*
 %{python_sitelib}/reaper/collectors.py
 %{python_sitelib}/reaper/collectors.py*
-
+%{python_sitelib}/reaper/__init__.py
+%{python_sitelib}/reaper/__init__.py*
 
 %changelog
 * Tue Sep  9 2014 Luiz Viana <lviana@include.io> - 1.0-1

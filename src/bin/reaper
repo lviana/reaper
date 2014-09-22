@@ -1,0 +1,81 @@
+#!/usr/bin/python
+
+import optparse
+
+
+# Dictionary model
+# {extended: [user, user], unlimited: [user, user]}
+
+privf = "/var/lib/reaper/privileges.yml"
+desc = "Set extended restriction plans to specified users."
+parser = optparse.OptionParser(description=desc)
+
+parser.add_option('-u', '--unlimited', help='set unlimited resources',
+                  action='store_true')
+parser.add_option('-e', '--extended', help='set extended resources',
+                  action='store_true')
+parser.add_option('-d', '--default', help='set default resources limit',
+                  action='store_true')
+
+(opts, args) = parser.parse_args()
+
+if True not in opts.__dict__.values():
+    parser.print_help()
+    exit(-1)
+
+count = 0
+for option in opts.__dict__.values():
+    if option == True:
+        count = count + 1
+if count > 1:
+    print('\n -- Conflicting options selected\n')
+    parser.print_help()
+    exit(-1)
+        
+if len(args) is 0:
+    print '\n -- Destination user is missing\n'
+    parser.print_help()
+    exit(-1)
+
+
+def load_priv_list:
+    try:
+        privs = yaml.load(open(privf, 'r').read())
+        return privs
+    except IOError:
+        open(privf, 'w').write(yaml.dump({'extended': [], 'unlimited': []}))
+        return yaml.load(open(privf, 'r').read())
+
+def write_priv_list(plist):
+    open(privf, 'w').write(yaml.dump(plist))
+        
+
+def validate(user, plist):
+    for group in plist.keys():
+        if user in plist[group]:
+            print('User already have extra privileges, skipping')
+            exit(1)
+
+
+def add_unlimited(user):
+    plist = load_priv_list()
+    validate(user, plist)
+    plist['unlimited'].append(user)
+    write_priv_list(plist)
+
+
+def add_extended(user):
+    plist = load_priv_list()
+    validate(user, plist)
+    plist['extended'].append(user)
+    write_priv_list(plist)
+
+
+if opts.unlimited:
+    add_unlimited(args[0])
+    print('User added to unrestrict resources group: %s' % args[0])
+elif opts.extended:
+    add_extended(args[0])
+    print('User added to extended resources group: %s' % args[0])
+else:
+    print('Removed extended attributes from %s' % args[0])

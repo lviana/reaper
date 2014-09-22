@@ -22,5 +22,5 @@ def shared():
     users = []
     config_sites = os.listdir('/etc/locaweb/hospedagem')
     for user in config_sites:
-        users.append(user.split('.conf')[0]))
+        users.append(user.split('.conf')[0])
     return users
