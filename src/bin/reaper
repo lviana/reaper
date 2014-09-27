@@ -1,12 +1,16 @@
 #!/usr/bin/python
 
+import ConfigParser
 import optparse
 
 
 # Dictionary model
 # {extended: [user, user], unlimited: [user, user]}
 
-privf = "/var/lib/reaper/privileges.yml"
+config = ConfigParser.RawConfigParser()
+config.read('/etc/reaper.cfg')
+privf = config.get('daemon', 'privfile')
+
 desc = "Set extended restriction plans to specified users."
 parser = optparse.OptionParser(description=desc)
 
@@ -38,7 +42,7 @@ if len(args) is 0:
     exit(-1)
 
 
-def load_priv_list:
+def load_priv_list():
     try:
         privs = yaml.load(open(privf, 'r').read())
         return privs

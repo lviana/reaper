@@ -11,7 +11,7 @@ URL:		http://github.com/lviana/reaper
 Source0:	reaper-%{version}.tar.bz2
 
 BuildRequires:	python, python-devel, python-setuptools
-Requires:	python, libcgroup, PyYAML
+Requires:	python, libcgroup, PyYAML, daemon
 
 %description
 Reaper is a resource controller for shared hosting environments, it
@@ -29,21 +29,20 @@ It is easy to be extended or adapted to run on other platforms.
 
 %install
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-
+%{__install} -D -m 0755 scripts/reaper.init $RPM_BUILD_ROOT%{_initrddir}/reaperd
 
 %files
 %attr(0640,root,root) %config(noreplace) %{_sysconfdir}/reaper.cfg
 %attr(0755,root,root) %{_bindir}/reaperd
+%attr(0750,root,root) %{_bindir}/reaper
+%attr(0755,root,root) %{_initrddir}/reaperd
 %defattr(0644,root,root,-)
 %{python_sitelib}/reaper-0.1.0-py2.6.egg-info/PKG-INFO
 %{python_sitelib}/reaper-0.1.0-py2.6.egg-info/SOURCES.txt
 %{python_sitelib}/reaper-0.1.0-py2.6.egg-info/dependency_links.txt
 %{python_sitelib}/reaper-0.1.0-py2.6.egg-info/top_level.txt
-%{python_sitelib}/reaper/cgroups.py
 %{python_sitelib}/reaper/cgroups.py*
-%{python_sitelib}/reaper/collectors.py
 %{python_sitelib}/reaper/collectors.py*
-%{python_sitelib}/reaper/__init__.py
 %{python_sitelib}/reaper/__init__.py*
 
 %changelog

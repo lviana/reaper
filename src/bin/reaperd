@@ -2,58 +2,83 @@
 
 import ConfigParser
 import os
+import re
 import sched
 import sys
 import time
 import yaml
 
+from datetime import datetime
 from reaper import cgroups
 from reaper import collectors
 
 
-def get_configuration():
-    config = ConfigParser.RawConfigParser()
-    config.read('/etc/reaper.cfg')
+config = ConfigParser.RawConfigParser()
+config.read('/etc/reaper.cfg')
 
-    plugin = config.get('daemon', 'plugin')
-    check = config.getint('daemon', 'interval')
-    bufferf = config.get('daemon', 'buffer')
-    debug = config.get('daemon', 'debug')
-    memory = config.get('limits', 'memory')
-    cores = config.get('limits', 'cores')
-    ememory = config.get('overlimit', 'memory')
+plugin = config.get('daemon', 'plugin')
+check = config.getint('daemon', 'interval')
+bufferf = config.get('daemon', 'buffer')
+privf = config.get('daemon', 'privfile')
+debug = config.get('daemon', 'debug')
+memory = config.get('limits', 'memory')
+cores = config.get('limits', 'cores')
+ememory = config.get('overlimit', 'memory')
 
-def gupdate():
+def output(message):
+    print('%s  %s' % (str(datetime.now()), message))
+
+def startup_checks():
+    # Verify processor cores
+    cpuinfo = open('/proc/cpuinfo', 'r').read()
+    for core in cores.split(','):
+        if not re.search('processor.*?:?%s' % core, cpuinfo):
+            output('Processor cores does not match configuration, check core numbers')
+            output('Shutting down...')
+            sys.exit(1)
+
+    # Clear buffer
+    output('Clearing current buffer')
+    open(bufferf, 'w').write(yaml.dump([]))
+    
+def gupdate(users):
     """ Update control groups on server
     """
-    users = yaml.load(open(bufferf, 'r').read())
-    cgroups.update_rules(users, cores, memory, ememory)
-    if debug: print('Control groups updated')
+    try:
+        allusers = yaml.load(open(privf, 'r').read())
+        allusers['users'] = users
+    except IOError:
+        allusers = {'extended': [], 'unlimited': [], 'users': users}
+
+    cgroups.update_rules(allusers, cores, memory, ememory)
+    output('Control groups updated')
 
 def verify(sc):
     """ Periodically verify system changes
     """
     try:
+        if debug: output('Checking system users')
         collect = getattr(collectors, plugin)
         users = collect()
         last_state = yaml.load(open(bufferf, 'r').read())
     except AttributeError:
-        print('Collector not found, exiting.')
+        output('Specified collector not found')
+        output('Shutting down')
         sys.exit(1)
     except IOError:
-        open(bufferf, 'w').write('')
+        open(bufferf, 'w').write(yaml.dump([]))
         last_state = yaml.load(open(bufferf, 'r').read())
 
     if last_state != users:
         open(bufferf, 'w').write(yaml.dump(users))
-        if debug: print('Buffer file updated')
-        gupdate()
-        if debug: print('Linux control groups updated')
+        if debug: output('Buffer file updated')
+        gupdate(users)
 
     sc.enter(check, 1, verify, (sc,))
 
 if __name__ == '__main__':
+    startup_checks()
     s = sched.scheduler(time.time, time.sleep)
     s.enter(check, 1, verify, (s,))
-    if debug: print('Starting reaper scheduled checks')
+    if debug: output('Starting reaper scheduled checks')
     s.run()

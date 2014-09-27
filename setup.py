@@ -1,7 +1,13 @@
 #!/usr/bin/python
 
-import os
+
 from setuptools import setup
+import os
+
+try:
+    os.makedirs('/var/lib/reaper')
+except OSError:
+    pass
 
 setup(
     name='reaper',
@@ -17,5 +23,6 @@ setup(
     package_dir={'reaper': 'src/lib'},
     license='Apache',
     data_files=[('/usr/bin', ['src/bin/reaperd']),
+                ('/usr/bin', ['src/bin/reaper']),
                 ('/etc', ['src/etc/reaper.cfg'])]
 )
