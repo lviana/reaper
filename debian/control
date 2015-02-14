@@ -1,0 +1,16 @@
+Source: reaper
+Section: python
+Priority: extra
+Maintainer: Luiz Viana <lviana@include.io>
+Build-Depends: debhelper (>= 7.0.50~), python, python-support, python-setuptools
+Standards-Version: 3.9.4
+Homepage: http://github.com/lviana/reaper
+
+Package: reaper
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-support, cgroup-bin, daemon
+Description: Shared resource controller
+ Reaper is a resource controller for shared hosting environments, it
+ supports both native implementations of application servers, plesk
+ and cpanel infrastructure.
+ 

@@ -19,25 +19,21 @@ def _mount():
         f.write('\t%s = /cgroup/%s;\n' % (controller, controller))
     f.write('}\n\n')
     f.close()
-    syslog.syslog(syslog.LOG_INFO, 'Updated mount points con cgconfig configuration file')
+    syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig mount entries')
 
-def _update_memory(users, memory):
-    """ Generate memory related cgroup rules
-    """
+def _update_memory(resellers, memory):
     f = open(cfile, 'a')
-    for user in users:
-        f.write('group user.%s {\n' % user)
+    for reseller in resellers:
+        f.write('group group.%s {\n' % reseller)
         f.write('\tmemory {\n')
         f.write('\t\tmemory.limit_in_bytes = %sM;\n' % memory)
         f.write('\t\tmemory.swappiness = 0;\n')
         f.write('\t}\n')
         f.write('}\n\n')
     f.close()
-    syslog.syslog(syslog.LOG_INFO, 'Updated memory groups on cgconfig configuration file')
+    syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig memory groups')
 
 def _update_cpuset(cores):
-    """ Generate processor core groups
-    """
     f = open(cfile, 'a')
     for core in cores.split(','):
         f.write('group cpu%s {\n' % core)
@@ -50,6 +46,7 @@ def _update_cpuset(cores):
     syslog.syslog(syslog.LOG_INFO, 'Updated cpusets on cgconfig configuration file')
 
 def cgapply():
+    
     syslog.syslog(syslog.LOG_INFO, 'Stopping cgconfig daemon')
     subprocess.call(['/sbin/service', 'cgconfig', 'stop'])
     syslog.syslog(syslog.LOG_INFO, 'Stopping cgred daemon')
@@ -60,35 +57,38 @@ def cgapply():
     time.sleep(2)
     syslog.syslog(syslog.LOG_INFO, 'Starting cgred daemon')
     subprocess.call(['/sbin/service', 'cgred', 'start'])
-    
-def update_rules(allusers, cores, memory, ememory):
-    """ Update control groups rules on server
-    """
-    unlimited = set(allusers['unlimited'])
-    extended = set(allusers['extended'])
-    users = set(allusers['users'])
-    users.difference_update(unlimited)
 
-    ## Setting up rules
-    corelist = cores.split(',')
-    corenumber = len(corelist)
+    
+def _create_cgrules(resellers, users, cores):
+    """ Generate cgrules
+    """
+    lcores = cores.split(',')
+    ncores = len(lcores)
+
     counter = 0
     f = open(rfile, 'w')
-    for user in users:
-        f.write('%s\t\tcpuset\tcpu%s\n' % (user, corelist[counter]))
-        if counter < (corenumber - 1):
-            counter = counter + 1
-        else:
-            counter = 0
-        f.write('%s\t\tmemory\tuser.%s\n' % (user, user))
-    f.close()
-    syslog.syslog(syslog.LOG_INFO, 'Updated cgroup rules engine daemon (cgred) configuration file')
 
-    ## Setting up groups
+    for reseller in resellers:
+        for user in users[reseller]:
+            f.write('%s\t\tcpuset\tcpu%s\n' % (user, lcores[counter]))
+            if counter < (ncores -1):
+                counter = counter + 1
+            else:
+                counter = 0
+            f.write('%s\t\tmemory\tgroup.%s\n' % (user, reseller))
+
+    f.close()
+    syslog.syslog(syslog.LOG_INFO, 'Updated cgred configuration file')
+            
+
+    
+def update(users, cores, memory):
+    """ Update control groups rules
+    """
+    resellers = users.keys()
+
     _mount()
     _update_cpuset(cores)
-    _update_memory(extended, ememory)
     _update_memory(users, memory)
-
-    ## Apply rules on system services
+    _create_cgrules(resellers, users, cores)
     cgapply()
