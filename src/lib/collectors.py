@@ -50,15 +50,17 @@ def plesk():
     finally:
         if con:
             con.close()
-
     return resellers
 
 def shared():
     """ Legacy shared hosting
     """
-    
-    users = []
+    userl = []
+    users = {}
+
     config_sites = os.listdir('/etc/locaweb/hospedagem')
     for user in config_sites:
-        users.append(user.split('.conf')[0])
+        userl.append(user.split('.conf')[0])
+    for user in userl:
+        users[user] = [user]
     return users
