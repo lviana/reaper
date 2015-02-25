@@ -32,9 +32,16 @@ def startup_checks():
     cpuinfo = open('/proc/cpuinfo', 'r').read()
     for core in cores.split(','):
         if not re.search('processor.*?:?%s' % core, cpuinfo):
-            syslog.syslog(syslog.LOG_ERROR,
+            syslog.syslog(syslog.LOG_ERR,
                           'Processor cores not available, check configuration file')
             sys.exit(1)
+    cgmodules = cgroups.cgstate()
+    controllers = ['cpuset', 'memory'] # Fix-me
+    for controller in controllers:
+        if cgmodules[controller] == 0:
+            syslog.syslog(syslog.LOG_ERR,
+                          'Cgroups module is not enabled in kernel (%s)' % controller)
+            sys.exit(2)
 
     open(bufferf, 'w').write(yaml.dump([]))
     if debug: output('Buffer file cleared')

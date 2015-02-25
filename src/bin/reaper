@@ -2,84 +2,124 @@
 
 import ConfigParser
 import optparse
+import sys
 
+def get_resources(username):
+    rulesf = open('/etc/cgrules.conf', 'r').read()
+    for line in rulesf.splitlines():
+        if username == line.split()[0]:
+            rules = line.split()
 
-# Dictionary model
-# {extended: [user, user], unlimited: [user, user]}
+    group = rules[2]
+    cpu_cores = open('/cgroup/cpuset/%s/cpuset.cpus' % group, 'r').read()
+    cpu_tasks = open('/cgroup/cpuset/%s/tasks' % group, 'r').readlines()
+    mem_tasks = open('/cgroup/memory/%s/tasks' % group, 'r').readlines()
+    mem_usage = open('/cgroup/memory/%s/memory.usage_in_bytes' % group, 'r').read()
+    mem_limit = open('/cgroup/memory/%s/memory.limit_in_bytes' % group, 'r').read()
 
-config = ConfigParser.RawConfigParser()
-config.read('/etc/reaper.cfg')
-privf = config.get('daemon', 'privfile')
+    mem_usage = int(mem_usage.strip())
+    mem_limit = int(mem_limit.strip())
+    
+    cpu_tasklist = []
+    mem_tasklist = []
 
-desc = "Set extended restriction plans to specified users."
-parser = optparse.OptionParser(description=desc)
+    for task in cpu_tasks:
+        cpu_tasklist.append(task.strip())
+    for task in mem_tasks:
+        mem_tasklist.append(task.strip())
+    
+    resources = {'group': group,
+                 'controllers': rules[1].split(','),
+                 'cores': cpu_cores.strip(),
+                 'cpu_tasks': cpu_tasklist,
+                 'mem_tasks': mem_tasklist,
+                 'memory_usage': mem_usage,
+                 'memory_limit': mem_limit
+    }
 
-parser.add_option('-u', '--unlimited', help='set unlimited resources',
+    return resources
+
+def b2mb(value):
+    return ((value / 1024) / 1024)
+
+def pretty_print(username, tasks):
+    resources = get_resources(username)
+    memusage = ((resources['memory_usage'] * 100) / float(resources['memory_limit']))
+
+    class bcolors:
+        ok = '\033[32m'
+        warning = '\033[33m'
+        critical = '\033[31m'
+        endc = '\033[0m'
+
+    if memusage < 60:
+        color = bcolors.ok
+    elif memusage > 60 and memusage < 80:
+        color = bcolors.warning
+    elif memusage > 80:
+        color = bcolors.critical
+    else:
+        color = bcolors.endc
+
+    print('\n UID: %s    Cgroup: %s    %s' % (username,
+                                              resources['group'],
+                                              resources['controllers'])
+    )
+    print('\n CPU associated cores: %s' % resources['cores'])
+    print('\n Memory limit: %sMB\n' % b2mb(resources['memory_limit']) +
+          color +
+          ' Memory usage: %sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
+                                          memusage) +
+          bcolors.endc 
+    )
+    print(' Active tasks: %s\n' % len(resources['mem_tasks']))
+
+    if tasks:
+        print(' Processes: %s\n' % resources['mem_tasks'])
+
+def short_print(username):
+    resources = get_resources(username)
+    print('uid=%s '
+          'cgroup=%s '
+          'cores=%s '
+          'memory=%s '
+          'tasks=%s ' %
+          (username,
+           resources['group'],
+           resources['cores'],
+           resources['memory_usage'],
+           len(resources['mem_tasks']))
+      )
+
+desc = "Get user's resource usage"
+usage = "usage: %prog [options] username"
+parser = optparse.OptionParser(description=desc, usage=usage)
+
+parser.add_option('-t', '--tasks',
+                  help='list active processes',
                   action='store_true')
-parser.add_option('-e', '--extended', help='set extended resources',
-                  action='store_true')
-parser.add_option('-d', '--default', help='set default resources limit',
+
+parser.add_option('-s', '--short',
+                  help='print short output (script processing)',
                   action='store_true')
 
 (opts, args) = parser.parse_args()
 
-if True not in opts.__dict__.values():
-    parser.print_help()
-    exit(-1)
-
-count = 0
-for option in opts.__dict__.values():
-    if option == True:
-        count = count + 1
-if count > 1:
-    print('\n -- Conflicting options selected\n')
-    parser.print_help()
-    exit(-1)
-        
 if len(args) is 0:
     print '\n -- Destination user is missing\n'
     parser.print_help()
     exit(-1)
 
-
-def load_priv_list():
-    try:
-        privs = yaml.load(open(privf, 'r').read())
-        return privs
-    except IOError:
-        open(privf, 'w').write(yaml.dump({'extended': [], 'unlimited': []}))
-        return yaml.load(open(privf, 'r').read())
-
-def write_priv_list(plist):
-    open(privf, 'w').write(yaml.dump(plist))
-        
-
-def validate(user, plist):
-    for group in plist.keys():
-        if user in plist[group]:
-            print('User already have extra privileges, skipping')
-            exit(1)
-
-
-def add_unlimited(user):
-    plist = load_priv_list()
-    validate(user, plist)
-    plist['unlimited'].append(user)
-    write_priv_list(plist)
-
-
-def add_extended(user):
-    plist = load_priv_list()
-    validate(user, plist)
-    plist['extended'].append(user)
-    write_priv_list(plist)
-
-
-if opts.unlimited:
-    add_unlimited(args[0])
-    print('User added to unrestrict resources group: %s' % args[0])
-elif opts.extended:
-    add_extended(args[0])
-    print('User added to extended resources group: %s' % args[0])
+if opts.tasks:
+    showtasks = True
 else:
-    print('Removed extended attributes from %s' % args[0])
+    showtasks = False
+
+if opts.short:
+    if showtasks:
+        sys.stderr.write('WARNING: Option --tasks unavailable on short output\n')
+    short_print(args[0])
+else:
+    pretty_print(args[0], showtasks)
+
+

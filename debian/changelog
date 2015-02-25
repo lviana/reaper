@@ -1,3 +1,16 @@
+reaper (1.1) stable; urgency=low
+
+  * Enable command line tool
+
+ -- Luiz Viana <lviana@include.io>  Tue, 24 Feb 2015 22:05:00 -0300
+
+reaper (1.0) unstable; urgency=low
+
+  * Add cgroups daemon controllers for Debian and Red Hat
+  * Add Plesk Linux support	
+
+ -- Luiz Viana <lviana@include.io>  Wed, 18 Feb 2015 16:05:00 -0300
+
 reaper (0.1) unstable; urgency=low
 
   * Initial Release.
