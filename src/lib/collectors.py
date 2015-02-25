@@ -4,34 +4,30 @@ import _mysql
 
 
 def cpanel():
-    """ Get user accounts from Cpanel environment
+    """ Cpanel shared reselling
     """
     users = {}
-    resellers = {}
-    userlist = os.listdir('/var/cpanel/users')
+    userl = os.listdir('/var/cpanel/users')
 
-    for user in userlist:
+    for user in userl:
         users[user] = {}
         for line in open('/var/cpanel/users/%s' % user):
             register = line.split('=')
             if not len(register) < 2:
-                users[user][register[0]] = register[1].replace('\n', '')
-    for user in users.keys():
-        resellers[user] = [user]
-
+                users[user][register[0]] = register[1].replace('\n','')
+    resellers = {}
+    resellerl = []
+    for line in open('/var/cpanel/resellers'):
+        resellerl.append(line.split(':')[0])
+        for reseller in resellerl:
+            resellers[reseller] = []
+            for account in users.keys():
+                if users[account]['OWNER'] == reseller:
+                    resellers[reseller].append(account)
     return resellers
 
-def shared():
-    """ Get user accounts from shared hosting environment
-    """
-    users = []
-    config_sites = os.listdir('/etc/locaweb/hospedagem')
-    for user in config_sites:
-        users.append(user.split('.conf')[0])
-    return users
-
 def plesk():
-    """ Get resellers and user accounts from Plesk environment
+    """ Plesk shared reselling
     """
     dbuser = 'admin'
     dbpass = open('/etc/psa/.psa.shadow', 'ro').read()
@@ -56,3 +52,13 @@ def plesk():
             con.close()
 
     return resellers
+
+def shared():
+    """ Legacy shared hosting
+    """
+    
+    users = []
+    config_sites = os.listdir('/etc/locaweb/hospedagem')
+    for user in config_sites:
+        users.append(user.split('.conf')[0])
+    return users
