@@ -10,7 +10,12 @@ def get_resources(username):
         if username == line.split()[0]:
             rules = line.split()
 
-    group = rules[2]
+    try:
+        group = rules[2]
+    except UnboundLocalError:
+        print('[Error] User not found on resource control groups')
+        sys.exit(1)
+
     cpu_cores = open('/cgroup/cpuset/%s/cpuset.cpus' % group, 'r').read()
     cpu_tasks = open('/cgroup/cpuset/%s/tasks' % group, 'r').readlines()
     mem_tasks = open('/cgroup/memory/%s/tasks' % group, 'r').readlines()

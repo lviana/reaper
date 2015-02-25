@@ -1,3 +1,9 @@
+reaper (1.2) stable; urgency=low
+
+  * User validation on command line tool
+
+ -- Luiz Viana <lviana@include.io>  Tue, 24 Feb 2015 22:45:00 -0300
+
 reaper (1.1) stable; urgency=low
 
   * Enable command line tool

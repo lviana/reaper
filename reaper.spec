@@ -2,7 +2,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:		reaper
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Resource controller
 
@@ -46,10 +46,12 @@ It is easy to be extended or adapted to run on other platforms.
 %{python_sitelib}/reaper/__init__.py*
 
 %changelog
+* Tue Feb 24 2015 Luiz Viana <lviana@include.io> - 1.2-1
+- Command line monitoring tool enabled
+
 * Wed Feb 18 2015 Luiz Viana <lviana@include.io> - 1.1-1
 - Added Plesk support
 - Debian compatibility added on functions
-- Command line monitoring tool enabled
 
 * Tue Sep  9 2014 Luiz Viana <lviana@include.io> - 1.0-1
 - Initial release
