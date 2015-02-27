@@ -1,3 +1,9 @@
+reaper (1.3) stable; urgency=low
+
+  * Processor usage reporting added
+
+ -- Luiz Viana <lviana@include.io>  Thu, 26 Feb 2015 20:45:00 -0300
+
 reaper (1.2) stable; urgency=low
 
   * User validation on command line tool

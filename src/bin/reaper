@@ -2,7 +2,9 @@
 
 import ConfigParser
 import optparse
+import psutil
 import sys
+
 
 def get_resources(username):
     rulesf = open('/etc/cgrules.conf', 'r').read()
@@ -47,40 +49,50 @@ def get_resources(username):
 def b2mb(value):
     return ((value / 1024) / 1024)
 
+def getshellcolor(value):
+    if value >= 0 and value < 60:
+        color = '\033[32m'
+    elif value > 60 and value < 80:
+        color = '\033[33m'
+    elif value > 80:
+        color = '\033[31m'
+    else:
+        color = '\033[0m'
+    return color
+
 def pretty_print(username, tasks):
     resources = get_resources(username)
     memusage = ((resources['memory_usage'] * 100) / float(resources['memory_limit']))
+    cpuusage = float(psutil.cpu_percent(percpu=True)[int(resources['cores'])])
 
-    class bcolors:
-        ok = '\033[32m'
-        warning = '\033[33m'
-        critical = '\033[31m'
-        endc = '\033[0m'
-
-    if memusage < 60:
-        color = bcolors.ok
-    elif memusage > 60 and memusage < 80:
-        color = bcolors.warning
-    elif memusage > 80:
-        color = bcolors.critical
-    else:
-        color = bcolors.endc
-
+    mcolor = getshellcolor(memusage)
+    ccolor = getshellcolor(cpuusage)
+    ecolor = getshellcolor(-1)
+    
     print('\n UID: %s    Cgroup: %s    %s' % (username,
                                               resources['group'],
                                               resources['controllers'])
     )
-    print('\n CPU associated cores: %s' % resources['cores'])
+    print('\n CPU assigned core: %s' % resources['cores'])
+    print(ccolor + ' CPU%s usage: %.2f%%' % (resources['cores'], cpuusage) + ecolor)
     print('\n Memory limit: %sMB\n' % b2mb(resources['memory_limit']) +
-          color +
+          mcolor +
           ' Memory usage: %sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
                                           memusage) +
-          bcolors.endc 
+          ecolor
     )
     print(' Active tasks: %s\n' % len(resources['mem_tasks']))
 
-    if tasks:
+    if tasks or extended:
         print(' Processes: %s\n' % resources['mem_tasks'])
+
+    if extended:
+        print(' Extended process information:\n')
+        for task in resources['mem_tasks']:
+            tname = open('/proc/%s/comm' % task).read()
+            print(' %s\t%s' % (task,
+                              tname.strip()))
+        print('')
 
 def short_print(username):
     resources = get_resources(username)
@@ -108,6 +120,10 @@ parser.add_option('-s', '--short',
                   help='print short output (script processing)',
                   action='store_true')
 
+parser.add_option('-e', '--extended',
+                  help='print extended information',
+                  action='store_true')
+                  
 (opts, args) = parser.parse_args()
 
 if len(args) is 0:
@@ -120,9 +136,14 @@ if opts.tasks:
 else:
     showtasks = False
 
+if opts.extended:
+    extended = True
+else:
+    extended = False
+
 if opts.short:
-    if showtasks:
-        sys.stderr.write('WARNING: Option --tasks unavailable on short output\n')
+    if showtasks or extended:
+        sys.stderr.write('WARNING: Option -t and -e not available with -s\n')
     short_print(args[0])
 else:
     pretty_print(args[0], showtasks)
