@@ -9,7 +9,7 @@ import syslog
 
 syslog.openlog('reaperd', syslog.LOG_PID, syslog.LOG_SYSLOG)
 
-controllers = ['cpuset', 'memory']
+controllers = ['cpuset', 'memory', 'cpuacct']
 
 cfile = '/etc/cgconfig.conf'
 rfile = '/etc/cgrules.conf'
@@ -29,7 +29,7 @@ def _update_groups(resellers, memory, cores):
     
     f = open(cfile, 'a')
     for reseller in resellers:
-        f.write('group g_%s {\n' % reseller)
+        f.write('group %s {\n' % reseller)
         f.write('\tmemory {\n')
         f.write('\t\tmemory.limit_in_bytes = %sM;\n' % memory)
         f.write('\t\tmemory.swappiness = 0;\n')
@@ -37,6 +37,9 @@ def _update_groups(resellers, memory, cores):
         f.write('\tcpuset {\n')
         f.write('\t\tcpuset.cpus = %s;\n' % clist[core])
         f.write('\t\tcpuset.mems = 0;\n')
+        f.write('\t}\n')
+        f.write('\tcpuacct {\n')
+        f.write('\t\tcpuacct.usage = 0;\n')
         f.write('\t}\n')
         f.write('}\n\n')
         core = core + 1
@@ -80,7 +83,7 @@ def _create_cgrules(resellers, users, cores):
     f = open(rfile, 'w')
     for reseller in resellers:
         for user in users[reseller]:
-            f.write('%s\t\tcpuset,memory\tg_%s\n' % (user, reseller))
+            f.write('%s\t\tcpuset,memory,cpuacct\t%s\n' % (user, reseller))
     f.close()
     syslog.syslog(syslog.LOG_INFO, 'Updated cgred configuration file')
             

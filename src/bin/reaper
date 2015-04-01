@@ -26,6 +26,11 @@ def get_resources(username):
 
     mem_usage = int(mem_usage.strip())
     mem_limit = int(mem_limit.strip())
+
+    cpuacct_usage = open('/cgroup/cpuacct/%s/cpuacct.stat' % group, 'r').read()
+    cpuacct_usage_usr = cpuacct_usage.splitlines()[0].split()[1]
+    cpuacct_usage_sys = cpuacct_usage.splitlines()[1].split()[1]
+    cpuacct_usage_total = int(cpuacct_usage_usr) + int(cpuacct_usage_sys)
     
     cpu_tasklist = []
     mem_tasklist = []
@@ -41,7 +46,10 @@ def get_resources(username):
                  'cpu_tasks': cpu_tasklist,
                  'mem_tasks': mem_tasklist,
                  'memory_usage': mem_usage,
-                 'memory_limit': mem_limit
+                 'memory_limit': mem_limit,
+                 'cpuacct_usr': cpuacct_usage_usr,
+                 'cpuacct_sys': cpuacct_usage_sys,
+                 'cpuacct_total': cpuacct_usage_total
     }
 
     return resources
@@ -68,19 +76,23 @@ def pretty_print(username, tasks):
     mcolor = getshellcolor(memusage)
     ccolor = getshellcolor(cpuusage)
     ecolor = getshellcolor(-1)
+    acolor = getshellcolor(int(resources['cpuacct_total']))
     
     print('\n UID: %s    Cgroup: %s    %s' % (username,
                                               resources['group'],
                                               resources['controllers'])
     )
-    print('\n CPU assigned core: %s' % resources['cores'])
-    print(ccolor + ' CPU%s usage: %.2f%%' % (resources['cores'], cpuusage) + ecolor)
+    print('\n CPU assigned core id\'s: %s' % resources['cores'])
+    print(' CPU%s usage: ' % resources['cores'] + ccolor +
+          '%.2f%%' % (cpuusage) + ecolor)
+    print('\n CPU accouting: ' + acolor +
+          'sys %s, usr %s, total %s' % (resources['cpuacct_sys'],
+                                        resources['cpuacct_usr'],
+                                        resources['cpuacct_total']) + ecolor)
     print('\n Memory limit: %sMB\n' % b2mb(resources['memory_limit']) +
-          mcolor +
-          ' Memory usage: %sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
-                                          memusage) +
-          ecolor
-    )
+          ' Memory usage: ' + mcolor +
+          '%sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
+                             memusage) + ecolor)
     print(' Active tasks: %s\n' % len(resources['mem_tasks']))
 
     if tasks or extended:
@@ -99,11 +111,13 @@ def short_print(username):
     print('uid=%s '
           'cgroup=%s '
           'cores=%s '
+          'cpu=%s '
           'memory=%s '
           'tasks=%s ' %
           (username,
            resources['group'],
            resources['cores'],
+           resources['cpuacct_total'],
            resources['memory_usage'],
            len(resources['mem_tasks']))
       )

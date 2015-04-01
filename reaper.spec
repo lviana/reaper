@@ -2,7 +2,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:		reaper
-Version:	1.3
+Version:	1.4
 Release:	1%{?dist}
 Summary:	Resource controller
 
@@ -13,11 +13,13 @@ Source0:	reaper-%{version}.tar.bz2
 BuildRequires:	python, python-devel, python-setuptools
 Requires:	python, libcgroup, PyYAML, daemon
 
+
 %description
 Reaper is a resource controller for shared hosting environments, it
 supports both native implementations of application servers or
 Cpanel based shared hosting infrastructure.
 It is easy to be extended or adapted to run on other platforms.
+
 
 %prep
 %setup -q -n reaper
@@ -30,6 +32,7 @@ It is easy to be extended or adapted to run on other platforms.
 %install
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
 %{__install} -D -m 0755 scripts/reaper.init $RPM_BUILD_ROOT%{_initrddir}/reaperd
+
 
 %files
 %attr(0640,root,root) %config(noreplace) %{_sysconfdir}/reaper.cfg
@@ -45,7 +48,12 @@ It is easy to be extended or adapted to run on other platforms.
 %{python_sitelib}/reaper/collectors.py*
 %{python_sitelib}/reaper/__init__.py*
 
+
 %changelog
+* Wed Apr 01 2015 Luiz Viana <lviana@include.io> - 1.4-1
+- CPU accounting enabled on all groups
+- Removed group prefix (g_)
+
 * Thu Feb 26 2015 Luiz Viana <lviana@include.io> - 1.3-1
 - Processor usage reporting enabled
 
