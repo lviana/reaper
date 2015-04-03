@@ -22,8 +22,11 @@ def cpanel():
         for reseller in resellerl:
             resellers[reseller] = []
             for account in users.keys():
-                if users[account]['OWNER'] == reseller:
-                    resellers[reseller].append(account)
+                try:
+                    if users[account]['OWNER'] == reseller:
+                        resellers[reseller].append(account)
+                except KeyError:
+                    print("Account owner not found, skipping (%s)" % account)
     return resellers
 
 def plesk():
@@ -45,7 +48,7 @@ def plesk():
                 resellers[item['login']].append(customer['login'])
     
     except _mysql.Error, e:
-        print "Could not connect to local MySQL server %d: %s" % (e.args[0], e.args[1])
+        print ("Could not connect to local MySQL server %d: %s" % (e.args[0], e.args[1]))
 
     finally:
         if con:

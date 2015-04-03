@@ -2,7 +2,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:		reaper
-Version:	1.4
+Version:	1.4.0
 Release:	1%{?dist}
 Summary:	Resource controller
 
@@ -40,10 +40,7 @@ It is easy to be extended or adapted to run on other platforms.
 %attr(0750,root,root) %{_bindir}/reaper
 %attr(0755,root,root) %{_initrddir}/reaperd
 %defattr(0644,root,root,-)
-%{python_sitelib}/reaper-0.1.0-py2.6.egg-info/PKG-INFO
-%{python_sitelib}/reaper-0.1.0-py2.6.egg-info/SOURCES.txt
-%{python_sitelib}/reaper-0.1.0-py2.6.egg-info/dependency_links.txt
-%{python_sitelib}/reaper-0.1.0-py2.6.egg-info/top_level.txt
+%{python_sitelib}/reaper-%{version}-py2.6.egg-info
 %{python_sitelib}/reaper/cgroups.py*
 %{python_sitelib}/reaper/collectors.py*
 %{python_sitelib}/reaper/__init__.py*
