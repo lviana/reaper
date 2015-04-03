@@ -85,10 +85,10 @@ def pretty_print(username, tasks):
     print('\n CPU assigned core id\'s: %s' % resources['cores'])
     print(' CPU%s usage: ' % resources['cores'] + ccolor +
           '%.2f%%' % (cpuusage) + ecolor)
-    print('\n CPU accouting: ' + acolor +
+    print('\n CPU accounting: ' +
           'sys %s, usr %s, total %s' % (resources['cpuacct_sys'],
                                         resources['cpuacct_usr'],
-                                        resources['cpuacct_total']) + ecolor)
+                                        resources['cpuacct_total']))
     print('\n Memory limit: %sMB\n' % b2mb(resources['memory_limit']) +
           ' Memory usage: ' + mcolor +
           '%sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
