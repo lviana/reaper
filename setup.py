@@ -11,9 +11,9 @@ except OSError:
 
 setup(
     name='reaper',
-    version='1.2.0',
+    version='1.5.1',
     description='Shared hosting resource manager',
-    long_description='Shared hosting resource manager based on libcgroups.',
+    long_description='Shared hosting resource manager based on Linux cgroups.',
     author='Luiz Viana',
     author_email='lviana@include.io',
     maintainer='Luiz Viana',

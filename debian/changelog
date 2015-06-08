@@ -1,3 +1,9 @@
+reaper (1.4.1) stable; urgency=low
+
+  * CPU accounting ratio enabled on command line interface
+
+ -- Luiz Viana <lviana@include.io>  Mon, 06 Apr 2015 20:03:00 -0300
+
 reaper (1.4) stable; urgency=low
 
   * CPU accounting enabled for all groups

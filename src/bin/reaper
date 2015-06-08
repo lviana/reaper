@@ -3,6 +3,8 @@
 import ConfigParser
 import optparse
 import psutil
+import os
+import time
 import sys
 
 
@@ -31,6 +33,7 @@ def get_resources(username):
     cpuacct_usage_usr = cpuacct_usage.splitlines()[0].split()[1]
     cpuacct_usage_sys = cpuacct_usage.splitlines()[1].split()[1]
     cpuacct_usage_total = int(cpuacct_usage_usr) + int(cpuacct_usage_sys)
+    cpuacct_mtime = os.stat('/cgroup/cpuacct/%s/cpuacct.stat' % group).st_mtime
     
     cpu_tasklist = []
     mem_tasklist = []
@@ -47,6 +50,7 @@ def get_resources(username):
                  'mem_tasks': mem_tasklist,
                  'memory_usage': mem_usage,
                  'memory_limit': mem_limit,
+                 'cpuacct_mtime': cpuacct_mtime,
                  'cpuacct_usr': cpuacct_usage_usr,
                  'cpuacct_sys': cpuacct_usage_sys,
                  'cpuacct_total': cpuacct_usage_total
@@ -72,11 +76,13 @@ def pretty_print(username, tasks):
     resources = get_resources(username)
     memusage = ((resources['memory_usage'] * 100) / float(resources['memory_limit']))
     cpuusage = float(psutil.cpu_percent(percpu=True)[int(resources['cores'])])
+    now = time.time()
+    cpuaccount = ((resources['cpuacct_total'] / 100) * 100) / now
 
     mcolor = getshellcolor(memusage)
     ccolor = getshellcolor(cpuusage)
     ecolor = getshellcolor(-1)
-    acolor = getshellcolor(int(resources['cpuacct_total']))
+    acolor = getshellcolor(cpuaccount)
     
     print('\n UID: %s    Cgroup: %s    %s' % (username,
                                               resources['group'],
@@ -85,10 +91,8 @@ def pretty_print(username, tasks):
     print('\n CPU assigned core id\'s: %s' % resources['cores'])
     print(' CPU%s usage: ' % resources['cores'] + ccolor +
           '%.2f%%' % (cpuusage) + ecolor)
-    print('\n CPU accounting: ' +
-          'sys %s, usr %s, total %s' % (resources['cpuacct_sys'],
-                                        resources['cpuacct_usr'],
-                                        resources['cpuacct_total']))
+    print('\n CPU accounting: ' + acolor +
+          '%.5f%%' % cpuaccount + ecolor)
     print('\n Memory limit: %sMB\n' % b2mb(resources['memory_limit']) +
           ' Memory usage: ' + mcolor +
           '%sMB (%.2f%%)' % (b2mb(resources['memory_usage']),
@@ -111,7 +115,7 @@ def short_print(username):
     print('uid=%s '
           'cgroup=%s '
           'cores=%s '
-          'cpu=%s '
+          'jiffy=%s '
           'memory=%s '
           'tasks=%s ' %
           (username,

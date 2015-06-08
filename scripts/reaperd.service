@@ -1,0 +1,13 @@
+[Unit]
+Description=Shared resource management service
+After=network.target remote-fs.target nss-lookup.target default.target
+
+[Service]
+Type=simple
+PIDFile=/run/reaperd.pid
+EnvironmentFile=/etc/sysconfig/reaperd
+ExecStart=/usr/bin/reaperd
+ExecReload=/bin/kill -USR2 $MAINPID
+
+[Install]
+WantedBy=multi-user.target

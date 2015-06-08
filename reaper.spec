@@ -1,14 +1,19 @@
-
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:		reaper
-Version:	1.4.0
+Version:	1.5.1
 Release:	1%{?dist}
-Summary:	Resource controller
+Summary:	Shared resources controller
 
 License:	Apache
 URL:		http://github.com/lviana/reaper
 Source0:	reaper-%{version}.tar.bz2
+
+%if 0%{?rhel} >= 7
+Source1:      	reaperd.service
+%else
+Source1:	reaperd.init
+%endif
 
 BuildRequires:	python, python-devel, python-setuptools
 Requires:	python, libcgroup, PyYAML, daemon
@@ -47,6 +52,9 @@ It is easy to be extended or adapted to run on other platforms.
 
 
 %changelog
+* Mon Apr 06 2015 Luiz Viana <lviana@include.io> - 1.4.1-1
+- CPU accounting ratio enabled on command line output
+
 * Wed Apr 01 2015 Luiz Viana <lviana@include.io> - 1.4-1
 - CPU accounting enabled on all groups
 - Removed group prefix (g_)
