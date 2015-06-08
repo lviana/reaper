@@ -1,4 +1,3 @@
-
 import os
 import re
 import time
@@ -26,7 +25,7 @@ def _mount():
 def _update_groups(resellers, memory, cores):
     clist = cores.split(',');
     core = 0
-    
+
     f = open(cfile, 'a')
     for reseller in resellers:
         f.write('group %s {\n' % reseller)
@@ -47,13 +46,13 @@ def _update_groups(resellers, memory, cores):
             core = 0
     f.close()
     syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig resource groups')
-        
+
 def _debian_apply():
     subprocess.call(['/usr/sbin/cgclear'])
     time.sleep(1)
     subprocess.call(['/usr/sbin/cgconfigparser', '-l', '/etc/cgconfig.conf'])
     time.sleep(1)
-    
+
     try:
         cgredpid = int(subprocess.check_output(['/bin/pidof', 'cgrulesengd']))
         os.kill(cgredpid, 12)
@@ -78,7 +77,7 @@ def cgapply():
     }
     execute[dist]()
     syslog.syslog(syslog.LOG_INFO, 'Reloading cgroups hierarchy and cgrulesengd (cgred) daemon')
-    
+
 def _create_cgrules(resellers, users, cores):
     f = open(rfile, 'w')
     for reseller in resellers:
@@ -86,7 +85,7 @@ def _create_cgrules(resellers, users, cores):
             f.write('%s\t\tcpuset,memory,cpuacct\t%s\n' % (user, reseller))
     f.close()
     syslog.syslog(syslog.LOG_INFO, 'Updated cgred configuration file')
-            
+
 def cgstate(target=None):
     comment = re.compile('^#.*')
     cgprocf = open('/proc/cgroups').read()
@@ -97,8 +96,8 @@ def cgstate(target=None):
     if target is None:
         return cgroups
     else:
-        return {target: cgroups[target]}            
-    
+        return {target: cgroups[target]}
+
 def update(users, cores, memory):
     """ Update control groups rules
     """
