@@ -13,7 +13,6 @@ def get_resources(username):
     for line in rulesf.splitlines():
         if username == line.split()[0]:
             rules = line.split()
-
     try:
         group = rules[2]
     except UnboundLocalError:
@@ -34,7 +33,7 @@ def get_resources(username):
     cpuacct_usage_sys = cpuacct_usage.splitlines()[1].split()[1]
     cpuacct_usage_total = int(cpuacct_usage_usr) + int(cpuacct_usage_sys)
     cpuacct_mtime = os.stat('/cgroup/cpuacct/%s/cpuacct.stat' % group).st_mtime
-    
+
     cpu_tasklist = []
     mem_tasklist = []
 
@@ -42,7 +41,7 @@ def get_resources(username):
         cpu_tasklist.append(task.strip())
     for task in mem_tasks:
         mem_tasklist.append(task.strip())
-    
+
     resources = {'group': group,
                  'controllers': rules[1].split(','),
                  'cores': cpu_cores.strip(),
@@ -83,7 +82,7 @@ def pretty_print(username, tasks):
     ccolor = getshellcolor(cpuusage)
     ecolor = getshellcolor(-1)
     acolor = getshellcolor(cpuaccount)
-    
+
     print('\n UID: %s    Cgroup: %s    %s' % (username,
                                               resources['group'],
                                               resources['controllers'])
@@ -141,7 +140,7 @@ parser.add_option('-s', '--short',
 parser.add_option('-e', '--extended',
                   help='print extended information',
                   action='store_true')
-                  
+
 (opts, args) = parser.parse_args()
 
 if len(args) is 0:
@@ -165,5 +164,4 @@ if opts.short:
     short_print(args[0])
 else:
     pretty_print(args[0], showtasks)
-
 

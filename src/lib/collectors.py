@@ -1,7 +1,5 @@
-
 import os
 import _mysql
-
 
 def cpanel():
     """ Cpanel shared reselling
@@ -46,7 +44,6 @@ def plesk():
             cresult = con.store_result()
             for customer in cresult.fetch_row(0, 1):
                 resellers[item['login']].append(customer['login'])
-    
     except _mysql.Error, e:
         print ("Could not connect to local MySQL server %d: %s" % (e.args[0], e.args[1]))
 
