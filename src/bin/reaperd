@@ -7,71 +7,77 @@ import sys
 import syslog
 import time
 import yaml
+import importlib
 
 from datetime import datetime
 from reaper import cgroups
-from reaper import collectors
-
 
 syslog.openlog('reaperd', syslog.LOG_PID, syslog.LOG_SYSLOG)
 
-config = ConfigParser.RawConfigParser()
-config.read('/etc/reaper.cfg')
-plugin  = config.get('daemon', 'plugin')
-check   = config.getint('daemon', 'interval')
-bufferf = config.get('daemon', 'buffer')
-debug   = config.get('daemon', 'debug')
-memory  = config.get('limits', 'memory')
-cores   = config.get('limits', 'cores')
+try:
+    config = ConfigParser.RawConfigParser()
+    config.read('/etc/reaper.cfg')
+    plugin  = config.get('daemon', 'plugin')
+    check   = config.getint('daemon', 'interval')
+    bufferf = config.get('daemon', 'buffer')
+    debug   = config.get('daemon', 'debug')
+    memory  = config.get('limits', 'memory')
+    cores   = config.get('limits', 'cores')
+except Exception:
+    syslog.syslog(syslog.LOG_ERR, 'Problems reading reaper configuration')
+    sys.exit(-1)
 
 def output(message):
     print('%s  %s' % (str(datetime.now()), message))
 
 def startup_checks():
-    cpuinfo = open('/proc/cpuinfo', 'r').read()
-    for core in cores.split(','):
-        if not re.search('processor.*?:?%s' % core, cpuinfo):
-            syslog.syslog(syslog.LOG_ERR,
-                          'Processor cores not available, check configuration file')
-            sys.exit(1)
+    with open('/proc/cpuinfo', 'r') as f:
+        cpuinfo = f.read()
+        for core in cores.split(','):
+            if not re.search('processor.*?:?%s' % core, cpuinfo):
+                syslog.syslog(syslog.LOG_ERR,
+                              'Processor cores not available, check configuration file')
+                sys.exit(1)
 
-cgmodules = cgroups.cgstate()
-    controllers = ['cpuset', 'memory'] # Fix-me
-    for controller in controllers:
+    cgmodules = cgroups.CGRoups.cgstate()
+    for controller in cgroups.CGroups.controllers:
         if cgmodules[controller] == 0:
             syslog.syslog(syslog.LOG_ERR,
                           'Cgroups module is not enabled in kernel (%s)' % controller)
             sys.exit(2)
 
-    open(bufferf, 'w').write(yaml.dump([]))
+    with open(bufferf, 'w') as f:
+        f.write(yaml.dump([]))
     if debug: output('Buffer file cleared')
 
 def gupdate(users):
-    cgroups.update(users, cores, memory)
+    cgroups.CGroups.update(users, cores, memory)
     if debug: output('Control groups updated')
 
 def verify(sc):
     try:
         if debug: output('Checking resellers and system users')
-        collect = getattr(collectors, plugin)
-        users = collect()
+        collect = importlib.import_module('reaper.collectors.%s' % plugin)
+        users = collect.collect()
     except AttributeError:
         syslog.syslog(syslog.LOG_ERR,
                       'Collector not found, check configuration file')
         sys.exit(2)
 
     try:
-        state = yaml.load(open(bufferf, 'r').read())
-
+        with open(bufferf, 'r') as f:
+            state = yaml.load(f.read())
     except IOError:
-        open(bufferf, 'w').write(yaml.dump({}))
-        state = yaml.load(open(bufferf, 'r').read())
+        with open(bufferf, 'w') as fw:
+            fw.write(yaml.dump({}))
+        with open(bufferf, 'r') as fr:
+            state = yaml.load(fr.read())
 
     if state != users:
         gupdate(users)
-        open(bufferf, 'w').write(yaml.dump(users))
+        with open(bufferf, 'w') as f:
+            f.write(yaml.dump(users))
         if debug: output('Buffer file updated')
-
     sc.enter(check, 1, verify, (sc,))
 
 if __name__ == '__main__':

@@ -6,56 +6,7 @@ import psutil
 import os
 import time
 import sys
-
-
-def get_resources(username):
-    rulesf = open('/etc/cgrules.conf', 'r').read()
-    for line in rulesf.splitlines():
-        if username == line.split()[0]:
-            rules = line.split()
-    try:
-        group = rules[2]
-    except UnboundLocalError:
-        print('[Error] User not found on resource control groups')
-        sys.exit(1)
-
-    cpu_cores = open('/cgroup/cpuset/%s/cpuset.cpus' % group, 'r').read()
-    cpu_tasks = open('/cgroup/cpuset/%s/tasks' % group, 'r').readlines()
-    mem_tasks = open('/cgroup/memory/%s/tasks' % group, 'r').readlines()
-    mem_usage = open('/cgroup/memory/%s/memory.usage_in_bytes' % group, 'r').read()
-    mem_limit = open('/cgroup/memory/%s/memory.limit_in_bytes' % group, 'r').read()
-
-    mem_usage = int(mem_usage.strip())
-    mem_limit = int(mem_limit.strip())
-
-    cpuacct_usage = open('/cgroup/cpuacct/%s/cpuacct.stat' % group, 'r').read()
-    cpuacct_usage_usr = cpuacct_usage.splitlines()[0].split()[1]
-    cpuacct_usage_sys = cpuacct_usage.splitlines()[1].split()[1]
-    cpuacct_usage_total = int(cpuacct_usage_usr) + int(cpuacct_usage_sys)
-    cpuacct_mtime = os.stat('/cgroup/cpuacct/%s/cpuacct.stat' % group).st_mtime
-
-    cpu_tasklist = []
-    mem_tasklist = []
-
-    for task in cpu_tasks:
-        cpu_tasklist.append(task.strip())
-    for task in mem_tasks:
-        mem_tasklist.append(task.strip())
-
-    resources = {'group': group,
-                 'controllers': rules[1].split(','),
-                 'cores': cpu_cores.strip(),
-                 'cpu_tasks': cpu_tasklist,
-                 'mem_tasks': mem_tasklist,
-                 'memory_usage': mem_usage,
-                 'memory_limit': mem_limit,
-                 'cpuacct_mtime': cpuacct_mtime,
-                 'cpuacct_usr': cpuacct_usage_usr,
-                 'cpuacct_sys': cpuacct_usage_sys,
-                 'cpuacct_total': cpuacct_usage_total
-    }
-
-    return resources
+from reaper import cgroups
 
 def b2mb(value):
     return ((value / 1024) / 1024)
@@ -72,7 +23,7 @@ def getshellcolor(value):
     return color
 
 def pretty_print(username, tasks):
-    resources = get_resources(username)
+    resources = cgroups.CGroups.get_resources(username)
     memusage = ((resources['memory_usage'] * 100) / float(resources['memory_limit']))
     cpuusage = float(psutil.cpu_percent(percpu=True)[int(resources['cores'])])
     now = time.time()
