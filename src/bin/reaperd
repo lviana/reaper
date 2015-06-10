@@ -39,7 +39,7 @@ def startup_checks():
                               'Processor cores not available, check configuration file')
                 sys.exit(1)
 
-    cgmodules = cgroups.CGRoups.cgstate()
+    cgmodules = cgroups.CGroups.cgstate()
     for controller in cgroups.CGroups.controllers:
         if cgmodules[controller] == 0:
             syslog.syslog(syslog.LOG_ERR,

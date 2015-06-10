@@ -1,27 +1,21 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
-Name:		reaper
-Version:	1.5.1
-Release:	1%{?dist}
-Summary:	Shared resources controller
+Name:           reaper
+Version:        1.5.1
+Release:        1%{?dist}
+Summary:        Shared resources controller
 
-License:	Apache
-URL:		http://github.com/lviana/reaper
-Source0:	reaper-%{version}.tar.bz2
-
-%if 0%{?fedora} < 17 && 0%{?rhel} < 7
-Source1:   	reaperd.service
-%else
-Source1:	reaperd.init
-%endif
+License:        Apache
+URL:            http://github.com/lviana/reaper
+Source0:        reaper-%{version}.tar.bz2
 
 %if 0%{?fedora} < 17 && 0%{?rhel} < 7
 Requires (post): chkconfig
 %else
 Requires (post): systemd
 %endif
-BuildRequires:	python, python-devel, python-setuptools
-Requires:	python, libcgroup, PyYAML, daemon
+BuildRequires:  python, python-devel, python-setuptools
+Requires:       python, libcgroup, PyYAML, daemon
 
 %description
 Reaper is a resource controller for shared hosting environments, it
@@ -71,7 +65,8 @@ fi
 %if 0%{?fedora} < 17 && 0%{?rhel} < 7
 %{__install} -D -m 0755 scripts/reaper.init $RPM_BUILD_ROOT%{_initrddir}/reaperd
 %else
-%{__install} -D -m 0755 scripts/reaperd.service /usr/lib/systemd/system/
+%{__install} -d -m 0755 $RPM_BUILD_ROOT/usr/lib/systemd/system/
+%{__install} -D -m 0755 -v scripts/reaperd.service $RPM_BUILD_ROOT/usr/lib/systemd/system/
 %endif
 
 %files
@@ -87,8 +82,8 @@ fi
 %endif
 %defattr(0644,root,root,-)
 %{python_sitelib}/reaper/cgroups.py*
-%{python_sitelib}/reaper/collectors.py*
 %{python_sitelib}/reaper/__init__.py*
+%{python_sitelib}/reaper/collectors/*
 
 
 %changelog
