@@ -19,7 +19,7 @@ setup(
     maintainer='Luiz Viana',
     maintainer_email='lviana@include.io',
     url='https://github.com/lviana/reaper',
-    packages=['reaper'],
+    packages=['reaper', 'reaper.collectors'],
     package_dir={'reaper': 'src/lib'},
     license='Apache',
     data_files=[('/usr/bin', ['src/bin/reaperd']),
