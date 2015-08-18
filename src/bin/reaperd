@@ -46,7 +46,7 @@ def startup_checks():
                           'Cgroups module is not enabled in kernel (%s)' % controller)
             sys.exit(2)
 
-    with open(bufferf, 'w') as f:
+    with open(bufferf, 'w+') as f:
         f.write(yaml.dump([]))
     if debug: output('Buffer file cleared')
 
