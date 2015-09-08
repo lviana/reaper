@@ -142,24 +142,33 @@ class CGroups(object):
         }
         return resources
 
-class RedHat(CGroups):
+class Redhat(CGroups):
+    distrotmp    = platform.linux_distribution()[0].lower()
+    has_space    = re.match('(\w+)\s(\w+)', distrotmp)
+    distrover   = platform.linux_distribution()[1]
+    if has_space:
+        distro = has_space.group(1)
+    else:
+        distro = distrotmp
+    flavors     = ['centos', 'redhat', 'fedora']
+
     def __init__(self):
-        flavors = ['centos', 'redhat', 'fedora']
-        super(CGroups, self).__init__()
+        super(Redhat, self).__init__()
 
     @classmethod
-    def me(self):
-        if self.distro in self.flavors:
+    def me(cls):
+        if Redhat.distro in cls.flavors:
             return True
+        return False
 
-    def is_systemd():
-        version = re.match('([0-9.]+\.\d+', self.distrover)
-        if self.distro == 'centos' or self.distro == 'redhat':
+    def is_systemd(self):
+        version = re.match('([0-9.]+)\.\d+', self.distrover)
+        if Redhat.distro == 'centos' or Redhat.distro == 'redhat':
             if float(version.group(1)) >= 7:
                 return True
             else:
                 return False
-        if self.distro == 'fedora':
+        if Redhat.distro == 'fedora':
             if float(version.group(1)) >= 17:
                 return True
             else:
@@ -176,15 +185,22 @@ class RedHat(CGroups):
                 subprocess.call(['/sbin/service', daemon, 'start'])
 
 class Debian(CGroups):
+    distro      = platform.linux_distribution()[0].lower()
+    distrover   = platform.linux_distribution()[1]
+    flavors     = ['debian', 'ubuntu']
+
+
     def __init__(self):
-        flavors = ['debian', 'ubuntu']
-        super(CGroups, self).__init__()
+        super(Debian, self).__init__()
 
-    def me(self):
-        if self.distro in self.flavors:
+    @classmethod
+    def me(cls):
+        if cls.distro in cls.flavors:
             return True
+        else:
+            return False
 
-    def is_systemd():
+    def is_systemd(self):
         version = re.match('([0-9]+\.\d+', self.distrover)
         if self.distro == 'debian':
             if int(version.group(1)) >= 8:
