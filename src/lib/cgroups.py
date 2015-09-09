@@ -10,8 +10,8 @@ import platform
 
 syslog.openlog('reaperd', syslog.LOG_PID, syslog.LOG_SYSLOG)
 class CGroups(object):
-    cfile = '/etc/cgconfig'
-    rfile = '/etc/cgrules'
+    cfile = '/etc/cgconfig.conf'
+    rfile = '/etc/cgrules.conf'
     controllers = ['cpuset', 'memory', 'cpuacct']
     def __init__(self):
         self.distro      = platform.linux_distribution()[0].lower()
