@@ -1,7 +1,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:           reaper
-Version:        1.5.1
+Version:        1.5.2
 Release:        1%{?dist}
 Summary:        Shared resources controller
 
