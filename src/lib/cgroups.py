@@ -42,7 +42,6 @@ class CGroups(object):
                 f.write('group %s {\n' % group)
                 f.write('\tmemory {\n')
                 f.write('\t\tmemory.limit_in_bytes = %sM;\n' % memory)
-                f.write('\t\tmemory.swappiness = 0;\n')
                 f.write('\t}\n')
                 f.write('\tcpuset {\n')
                 f.write('\t\tcpuset.cpus = %s;\n' % clist[core])
