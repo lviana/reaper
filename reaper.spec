@@ -1,7 +1,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
 
 Name:           reaper
-Version:        1.5.2
+Version:        1.5.3
 Release:        1%{?dist}
 Summary:        Shared resources controller
 
@@ -87,6 +87,9 @@ fi
 
 
 %changelog
+* Wed Sep 09 2015 Luiz Viana <lviana@include.io> - 1.5.3
+- Add cpu limit on local MySQL by default
+
 * Mon Apr 06 2015 Luiz Viana <lviana@include.io> - 1.4.1-1
 - CPU accounting ratio enabled on command line output
 

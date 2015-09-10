@@ -12,12 +12,14 @@ syslog.openlog('reaperd', syslog.LOG_PID, syslog.LOG_SYSLOG)
 class CGroups(object):
     cfile = '/etc/cgconfig.conf'
     rfile = '/etc/cgrules.conf'
-    controllers = ['cpuset', 'memory', 'cpuacct']
+    mfile = '/etc/cgconfig.d/mysql.conf'
+    controllers = ['cpuset', 'memory', 'cpuacct', 'cpu']
+    
     def __init__(self):
         self.distro      = platform.linux_distribution()[0].lower()
         self.distrover   = platform.linux_distribution()[1]
         self.daemons     = ['cgconfig', 'cgred']
-        self.controllers = ['cpuset', 'memory', 'cpuacct']
+        self.controllers = ['cpuset', 'memory', 'cpuacct', 'cpu']
 
     def apply(self):
         raise RuntimeError('Not implemented')
@@ -32,6 +34,20 @@ class CGroups(object):
                     f.write('\t%s = /cgroup/%s;\n' % (controller, controller))
                 f.write('}\n\n')
         syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig mount entries')
+
+        
+    @staticmethod
+    def add_mysql_limit(shares='512'):
+        with open(CGroups.mfile, 'w') as f:
+            f.write('group mysql {\n')
+            f.write('\tcpu {\n')
+            f.write('\t\tcpu.shares = "%s";\n' % shares)
+            f.write('\t}\n')
+            f.write('}\n')
+            f.close()
+        self.mysqlctl = True
+        syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig MySQL resource controller')
+        
 
     @staticmethod
     def update_groups(groups, memory, cores):
@@ -56,13 +72,16 @@ class CGroups(object):
                     core = 0
         syslog.syslog(syslog.LOG_INFO, 'Updated cgconfig resource groups')
 
+
     @staticmethod
     def create_cgrules(groups, users, cores):
         with open(CGroups.rfile, 'w') as f:
             for group in groups:
                 for user in users[group]:
                     f.write('%s\t\tcpuset,memory,cpuacct\t%s\n' % (user, group))
+            f.write('mysql\t\tcpu\tmysql\n'
         syslog.syslog(syslog.LOG_INFO, 'Updated cgred configuration file')
+
 
     @staticmethod
     def cgstate(target=None):
@@ -78,16 +97,19 @@ class CGroups(object):
             else:
                 return {target: cgroups[target]}
 
+
     @staticmethod
     def update(users, cores, memory):
         """ Update control groups rules """
         resellers = users.keys()
         with driver() as distro:
             distro.mount()
+            CGroups.add_mysql_limit()
             CGroups.update_groups(users, memory, cores)
             CGroups.create_cgrules(resellers, users, cores)
             distro.apply()
             syslog.syslog(syslog.LOG_INFO, 'Reloading cgroups hierarchy and cgrulesengd (cgred) daemon')
+
 
     @staticmethod
     def get_resources(username):
@@ -141,6 +163,7 @@ class CGroups(object):
         }
         return resources
 
+
 class Redhat(CGroups):
     distrotmp    = platform.linux_distribution()[0].lower()
     has_space    = re.match('(\w+)\s(\w+)', distrotmp)
@@ -183,6 +206,7 @@ class Redhat(CGroups):
                 subprocess.call(['/sbin/service', daemon, 'stop'])
                 subprocess.call(['/sbin/service', daemon, 'start'])
 
+
 class Debian(CGroups):
     distro      = platform.linux_distribution()[0].lower()
     distrover   = platform.linux_distribution()[1]
@@ -217,6 +241,7 @@ class Debian(CGroups):
             os.kill(cgredpid, 12)
         except subprocess.CalledProcessError:
             subprocess.call(['/usr/sbin/cgrulesengd', '-s'])
+
 
 @contextlib.contextmanager
 def driver():
